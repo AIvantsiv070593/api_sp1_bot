@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 
 logging.basicConfig(
     level=logging.DEBUG,
-    handlers=[RotatingFileHandler('log/main.log', maxBytes=50000000,
+    handlers=[RotatingFileHandler('main.log', maxBytes=50000000,
                                   backupCount=5, encoding='utf-8')],
     format='%(asctime)s, %(levelname)s, %(message)s, %(name)s'
 )
@@ -19,7 +19,7 @@ formatter = logging.Formatter(
 
 logger_bot = logging.getLogger(__name__)
 logger_bot.setLevel(logging.DEBUG)
-handler_bot = RotatingFileHandler('log/logger_bot.log', maxBytes=10000000,
+handler_bot = RotatingFileHandler('logger_bot.log', maxBytes=10000000,
                                   backupCount=5, encoding='utf-8')
 handler_bot.setFormatter(formatter)
 logger_bot.addHandler(handler_bot)
