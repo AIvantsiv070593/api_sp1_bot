@@ -38,23 +38,23 @@ def parse_homework_status(homework):
         homework_name = homework['homework_name']
         homework_status = homework['status']
         verdict = dict_statuses[homework_status]
-        return f'У вас проверили работу {homework_name}!\n\n{verdict}'
+        return f'У вас проверили работу "{homework_name}"!\n\n{verdict}'
     except Exception as er:
         logger_bot.error(f'Работа или статус работы не найдены: {er}')
-        return ('Работа или статус работы не найдены!\n\n'
-                'Проверте запрос!')
+        return (f'Работа "{homework_name}" или статус {homework_status}'
+                ' работы не найдены!\n\nПроверте запрос!')
 
 
 def get_homework_statuses(current_timestamp):
     """Получает статус домашней работы."""
-    data = {'from_date': 0}
+    data = {'from_date': current_timestamp}
     try:
         response = requests.get(URL_API, params=data, headers=HEADERS)
-        response.raise_for_status()
+        # response.raise_for_status()
         return response.json()
     except requests.exceptions.HTTPError as er:
         raise requests.exceptions.HTTPError(
-            f'Ошибка {er} при запросе на {URL_API}')
+            f'Ошибка {er}')
     except requests.exceptions.RequestException as er:
         raise requests.exceptions.RequestException(
             f'Ошибка {er} при запросе на {URL_API}')
@@ -88,7 +88,7 @@ def main():
                         new_homework.get('homeworks')[0]), bot_сlient)
             current_timestamp = new_homework.get('current_date',
                                                  current_timestamp)
-            time.sleep(300)
+            time.sleep(SLEEP_MAIN)
         except telegram.error.BadRequest:
             time.sleep(SLEEP_EXCEPTION)
         except telegram.error.Unauthorized:
