@@ -2,6 +2,7 @@ import logging
 import os
 import os.path
 import time
+import sys
 from logging.handlers import RotatingFileHandler
 
 import requests
@@ -19,30 +20,42 @@ handler_bot.setFormatter(formatter)
 logger_bot.addHandler(handler_bot)
 
 load_dotenv()
-PRAKTIKUM_TOKEN = os.environ['PRAKTIKUM_TOKEN']
-TELEGRAM_TOKEN = os.environ['TELEGRAM_TOKEN']
-CHAT_ID = os.environ['TELEGRAM_CHAT_ID']
+try:
+    PRAKTIKUM_TOKEN = os.environ['PRAKTIKUM_TOKEN']
+    TELEGRAM_TOKEN = os.environ['TELEGRAM_TOKEN']
+    CHAT_ID = os.environ['TELEGRAM_CHAT_ID']
+except KeyError as er:
+    logger_bot.error(f'Ключ {er} не найден')
+    sys.exit(f'Ключ {er} не найден')
 URL_API = 'https://praktikum.yandex.ru/api/user_api/homework_statuses/'
+
 HEADERS = {'Authorization': f'OAuth {PRAKTIKUM_TOKEN}'}
+DICT_STATUSES = {'rejected': 'К сожалению в работе нашлись ошибки.',
+                 'approved': ('Ревьюеру всё понравилось, '
+                              'можно приступать к следующему уроку.'),
+                 'reviewing': 'Работа проверяется.'}
 SLEEP_MAIN = 300
 SLEEP_EXCEPTION = 150
 
 
 def parse_homework_status(homework):
-    """Определяет статус домашней работы."""
-    dict_statuses = {'rejected': 'К сожалению в работе нашлись ошибки.',
-                     'approved': ('Ревьюеру всё понравилось, '
-                                  'можно приступать к следующему уроку.'),
-                     'reviewing': 'Работа проверяется.'}
     try:
         homework_name = homework['homework_name']
+    except KeyError as er:
+        logger_bot.error(f'Работа {er} не найдена!')
+        return (f'Работа {er} не найдена!\n\nПроверте запрос!')
+    try:
         homework_status = homework['status']
-        verdict = dict_statuses[homework_status]
-        return f'У вас проверили работу "{homework_name}"!\n\n{verdict}'
-    except Exception as er:
+    except KeyError as er:
+        logger_bot.error(f'Статус {er} не найден!')
+        return(f'Статус {er} не найден!\n\nПроверте запрос!')
+    try:
+        verdict = DICT_STATUSES[homework_status]
+    except KeyError as er:
         logger_bot.error(f'Работа или статус работы не найдены: {er}')
-        return (f'Работа "{homework_name}" или статус {homework_status}'
-                ' работы не найдены!\n\nПроверте запрос!')
+        return(f'Получен неизвестный статус {homework_status} !'
+               '\n\nПроверте запрос!')
+    return f'У вас проверили работу "{homework_name}"!\n\n{verdict}'
 
 
 def get_homework_statuses(current_timestamp):
@@ -52,9 +65,6 @@ def get_homework_statuses(current_timestamp):
         response = requests.get(URL_API, params=data, headers=HEADERS)
         # response.raise_for_status()
         return response.json()
-    except requests.exceptions.HTTPError as er:
-        raise requests.exceptions.HTTPError(
-            f'Ошибка {er}')
     except requests.exceptions.RequestException as er:
         raise requests.exceptions.RequestException(
             f'Ошибка {er} при запросе на {URL_API}')
@@ -76,7 +86,7 @@ def main():
         bot_сlient.getMe()
         send_message('Бот запущен!', bot_сlient)
     except telegram.error.Unauthorized as er:
-        logger_bot.error(f'Бот не запущен ОШИБКА АВТОРИЗАЦИИ 2| {str(er)}')
+        logger_bot.error(f'Бот не запущен ОШИБКА АВТОРИЗАЦИИ | {str(er)}')
     current_timestamp = int(time.time())
 
     while True:
